@@ -19,6 +19,7 @@ export function mountTeacherMenu(root,services,options={}){
   const title={value:options.defaultSetTitle??"My vocabulary"};
   menuSection.querySelector(".teacherHowTo div").textContent=options.instructions??"Select the correct translation.";
   const cats=options.categories??{};
+  lang.replaceChildren();
   for(const l of getSupportedLanguages()){const opt=el("option","",l.label);opt.value=l.locale;lang.append(opt);}
   lang.value=options.defaultLanguage??"es-ES";
   function setCategories(){category.replaceChildren();const custom=el("option","","Custom vocabulary");custom.value="";category.append(custom);for(const key of Object.keys(cats[lang.value]??{})){const opt=el("option","",key);opt.value=key;category.append(opt);}}
