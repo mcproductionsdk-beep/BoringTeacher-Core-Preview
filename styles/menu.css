@@ -38,3 +38,23 @@
 .bt-core #menu .studentIntro{display:none}
 .bt-core .wide{width:100%;font-size:18px}
 @media(max-width:760px){.bt-core .teacherMenu{grid-template-columns:1fr;gap:10px}.bt-core .settingsFields{grid-template-columns:1fr}.bt-core .card{padding:12px}.bt-core textarea{height:34vh;min-height:210px;font-size:16px}.bt-core select{min-height:48px;font-size:16px}.bt-core button{min-height:48px}.bt-core #shareStudentLink,.bt-core .finalPlay{min-height:56px}}
+
+
+/* Word Warehouse V0.6.2-inspired teacher menu — scoped to isolated Core preview. */
+.bt-core:has(.warehouseCols){background:#10192e;border:0;box-shadow:none;max-width:1050px;color:#f8f8ff}
+.bt-core:has(.warehouseCols) .bt-logo{color:#ffe082;text-shadow:3px 3px #000}
+.bt-core .warehouseCols{grid-template-columns:1fr 1.25fr;gap:12px}
+.bt-core .warehousePanel{background:#233958;color:#f8f8ff;border:3px solid #7bbaf3;padding:15px;box-shadow:5px 5px #050b17}
+.bt-core .warehousePanel h2{color:#ffe082;font-size:18px}
+.bt-core .warehousePanel .help,.bt-core .warehousePanel .fieldLabel{color:#bfd3ed}
+.bt-core .warehousePanel .fieldLabel{display:block;margin:12px 0 5px}
+.bt-core .warehousePanel select,.bt-core .warehousePanel textarea{background:#f5f8ff;border:3px solid #10192e;color:#18243b}
+.bt-core .warehousePanel textarea{height:220px;margin-top:10px}
+.bt-core .warehousePanel button{background:#ffe082;border:3px solid #121e34;color:#14243d;box-shadow:3px 3px #050d1c}
+.bt-core .warehousePanel .warehouseActions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.bt-core .warehousePanel .warehouseActions button{width:auto;flex:1 1 auto}
+.bt-core .warehousePanel .teacherHowTo{background:#233958;color:#bfd3ed;border:0;padding:0}
+.bt-core .warehousePanel .preview{background:transparent;color:#bfd3ed;border:0;padding:5px 0}
+.bt-core .warehousePanel .stepHint{color:#bfd3ed}
+.bt-core .warehousePanel a{color:#8cdaff}
+@media(max-width:760px){.bt-core .warehouseCols{grid-template-columns:1fr}.bt-core .warehousePanel textarea{height:170px}.bt-core .warehousePanel .warehouseActions button{flex:1 1 100%}}
