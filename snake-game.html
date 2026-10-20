@@ -339,6 +339,10 @@ E("shareStudentLink").onclick=async function(){await createStudentLink();if(last
 cats(false);preview();loadStudentSet();
 })();</script><script>
 /* Isolated Core integration bridge. The original snake engine is unchanged. */
+/* In Core mode the legacy menu must never flash or become the entry screen. */
+document.getElementById("menu").style.display="none";
+parent.postMessage({type:"BT_SNAKE_READY"},location.origin);
+
 window.addEventListener("message",function(event){
  if(event.origin!==location.origin||!event.data||event.data.type!=="BT_SNAKE_START")return;
  var payload=event.data.vocabulary;
@@ -347,6 +351,7 @@ window.addEventListener("message",function(event){
  document.getElementById("words").value=payload.pairs.map(function(pair){return pair[0]+"\t"+pair[1]}).join("\n");
  document.getElementById("category").value="custom";
  document.getElementById("play").click();
+ parent.postMessage({type:document.getElementById("game").classList.contains("active")?"BT_SNAKE_STARTED":"BT_SNAKE_START_FAILED"},location.origin);
 });
 document.getElementById("mainMenu").addEventListener("click",function(){parent.postMessage({type:"BT_SNAKE_MENU"},location.origin)});
 document.getElementById("overMenu").addEventListener("click",function(){parent.postMessage({type:"BT_SNAKE_MENU"},location.origin)});
