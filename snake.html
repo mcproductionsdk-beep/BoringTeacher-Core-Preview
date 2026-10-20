@@ -19,10 +19,16 @@ const sharing=createSharingClient({apiBaseUrl:"https://boringteacher-vocabulary-
 const voice=createVoiceService();let menu=null;
 const instructions="ARROW KEYS / WASD = steer · P = pause. Eat the correct target-language word. Wrong words cost a life. The snake wraps around the edges.";
 const options={title:"WORD SNAKE",instructions,categories:WAREHOUSE_CATEGORIES,defaultCategory:"Animals",defaultText:"",previewGameUrl:location.href,onPlay:start};
+let snakeReady=false,pendingVocabulary=null;
+function deliverSnake(){
+ if(!snakeReady||!pendingVocabulary)return;
+ frame.contentWindow.postMessage({type:"BT_SNAKE_START",vocabulary:pendingVocabulary},location.origin);
+ pendingVocabulary=null;
+}
 function start(vocabulary){
+ pendingVocabulary=vocabulary;
  menu?.destroy();menu=null;root.hidden=true;frame.classList.add("playing");
- const deliver=()=>frame.contentWindow.postMessage({type:"BT_SNAKE_START",vocabulary},location.origin);
- if(frame.contentDocument?.readyState==="complete")deliver();else frame.addEventListener("load",deliver,{once:true});
+ deliverSnake();
  frame.focus();
 }
 function showMenu(){
@@ -30,6 +36,11 @@ function showMenu(){
  menu?.destroy();menu=null;voice.cancel();
  menu=readStudentSetId(location.href)?mountStudentMenu(root,{sharing,voice},{...options,studentUrl:location.href}):mountTeacherMenu(root,{sharing,voice},options);
 }
-window.addEventListener("message",e=>{if(e.origin===location.origin&&e.source===frame.contentWindow&&e.data?.type==="BT_SNAKE_MENU")showMenu()});
+window.addEventListener("message",e=>{
+ if(e.origin!==location.origin||e.source!==frame.contentWindow)return;
+ if(e.data?.type==="BT_SNAKE_READY"){snakeReady=true;deliverSnake();}
+ if(e.data?.type==="BT_SNAKE_MENU")showMenu();
+ if(e.data?.type==="BT_SNAKE_START_FAILED"){frame.classList.remove("playing");root.hidden=false;root.textContent="Word Snake could not start. Please refresh and try again.";}
+});
 showMenu();
 </script></body></html>
