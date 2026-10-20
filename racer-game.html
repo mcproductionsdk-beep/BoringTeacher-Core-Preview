@@ -1,0 +1,155 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Word Racer — stripped engine test</title><style>
+*{box-sizing:border-box}body{margin:0;background:#79bde2;color:#fff;font-family:"Courier New",monospace;image-rendering:pixelated}
+.app{width:min(1120px,calc(100vw - 12px));margin:6px auto;padding:10px;background:#17365f;border:5px solid #102744;box-shadow:0 0 0 4px #f3d64e}
+.logo{text-align:center;font:900 clamp(27px,4vw,44px) "Courier New";letter-spacing:4px;text-shadow:4px 4px #102744;color:#fff;margin:4px}
+.screen{display:none}.screen.active{display:block}.grid{display:grid;grid-template-columns:1.35fr .75fr;gap:12px}
+.card{background:#f4e7bd;color:#152945;border:4px solid #152945;padding:12px;box-shadow:inset 0 0 0 3px #fff5d7}
+h2{color:#b52f49;font-size:18px;margin:0 0 8px}.help{color:#294361;font-size:13px;font-weight:bold;line-height:1.4}
+textarea,select{width:100%;background:#fff8d9;color:#152945;border:4px solid #152945;border-radius:0;padding:9px;font:700 14px "Courier New"}
+textarea{height:min(38vh,285px);min-height:180px}button{font:900 14px "Courier New";padding:10px 14px;margin:4px;border:4px solid #152945;background:#5cc5d8;color:#102744;cursor:pointer;box-shadow:inset -3px -3px #2e7c9a,inset 3px 3px #b8f5ee}
+button:active{transform:translate(2px,2px)}.primary{background:#79d85b}.yellow{background:#f3d64e}.pink{background:#ef6c88}.wide{width:100%;font-size:18px}
+.preview{margin-top:8px;padding:9px;background:#d8eef0;color:#19324e;border:3px solid #19324e;font-size:12px}.error{color:#b9223e;min-height:18px;font-weight:bold;font-size:12px}
+.hud{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;margin:7px 0;font:900 13px "Courier New";text-shadow:2px 2px #102744}.target{text-align:center;background:#f3d64e;color:#152945;border:4px solid #152945;padding:8px;font-size:clamp(15px,2vw,23px);text-shadow:none}.target b{color:#b52f49}.progress{text-align:right}
+.wrap{height:min(68vh,650px);max-height:calc(100vh - 170px);min-height:370px;position:relative;border:4px solid #102744;background:#397f45}canvas{width:100%;height:100%;display:block;image-rendering:pixelated}
+.buttons{text-align:center}.tip{text-align:center;font-size:11px;font-weight:bold;color:#d9edff;text-shadow:2px 2px #102744}.overlay{display:none;position:absolute;inset:0;background:#102744e8;z-index:5;align-items:center;justify-content:center;text-align:center}.overlay.show{display:flex}.big{font:900 clamp(28px,5vw,48px) "Courier New";color:#ef6c88;text-shadow:4px 4px #000}.msg{font:900 clamp(17px,2.4vw,27px) "Courier New";margin:10px}.toast{display:none;position:absolute;left:50%;top:14%;transform:translateX(-50%);z-index:4;font:900 25px "Courier New";text-shadow:3px 3px #102744}
+.mobile-controls{display:none}
+@media(max-width:760px){
+.grid{grid-template-columns:1fr}
+#game.active{display:flex;flex-direction:column}
+#game .buttons{order:1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;margin:2px 0 5px}
+#game .buttons button{margin:0;padding:8px 2px;font-size:10px;min-width:0}
+#game .hud{order:2;grid-template-columns:1fr 1fr;margin:4px 0}
+#game .target{grid-column:1/-1;grid-row:1}
+#game .wrap{order:3;height:60vh;max-height:none}
+#game .mobile-controls{order:4;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:10px 2px 3px}
+#game .mobile-controls button{margin:0;min-height:62px;font-size:15px;touch-action:none;user-select:none;-webkit-user-select:none}
+#game .mobile-controls .boost{background:#f3d64e}
+#game .mobile-controls .fire{grid-column:1/-1;background:#ef6c88;font-size:18px}
+#game .tip{display:none}
+}
+
+/* Shareable Vocabulary Prototype V2 */
+.setupStep{margin:10px 0;padding:10px;background:#d8eef0;border:4px solid #152945;color:#19324e}
+.stepTitle{font:900 15px "Courier New";color:#b52f49;margin-bottom:7px}
+.stepHint{font:700 11px "Courier New";line-height:1.35;margin:5px 0 8px}
+.shareRow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.shareRow button{flex:1 1 180px}
+#copyStudentLink{display:none;background:#f3d64e}
+#studentIntro{display:none}
+#studentIntro.show{display:block}
+.studentBadge{display:none}
+.studentTitle{font:900 clamp(22px,3vw,34px) "Courier New";color:#176b43;margin:0 0 22px;text-transform:uppercase}
+.studentMeta{font:900 clamp(14px,2vw,18px) "Courier New";color:#152945;margin-bottom:28px}
+.howTo{margin-top:18px}
+.howTo summary{cursor:pointer;font:900 14px "Courier New";color:#152945}
+.howTo div{font:700 12px "Courier New";line-height:1.5;margin:10px auto 0;max-width:620px}
+body.studentMode{background:#172b52}
+body.studentMode .app{width:min(1120px,calc(100vw - 28px));min-height:calc(100vh - 28px);margin:14px auto;padding:22px;background:#213f6d;border:5px solid #102744;box-shadow:0 0 0 4px #f3d64e}
+body.studentMode .logo{color:#f3d64e;font-size:clamp(34px,5vw,58px);margin:4px 0 28px}
+body.studentMode .teacherOnly{display:none!important}
+body.studentMode #menu{display:block}
+body.studentMode #menu>.grid{display:none!important}
+body.studentMode #studentIntro{display:block;width:min(760px,92%);margin:0 auto;padding:34px 28px;background:#f4e7bd;border:5px solid #152945;color:#152945;text-align:center;box-shadow:inset 0 0 0 3px #fff5d7}
+body.studentMode #studentPlay{display:block;width:100%;margin:0;background:#79d85b;color:#102744;font-size:clamp(18px,2.5vw,24px);padding:14px}
+@media(max-width:760px){
+body.studentMode .app{width:calc(100vw - 16px);min-height:calc(100vh - 16px);margin:8px auto;padding:14px}
+body.studentMode .logo{margin-bottom:18px}
+body.studentMode #studentIntro{width:100%;padding:24px 14px}
+}
+
+
+/* Boring Teacher Vocabulary Menu v1.0 — Word Racer prototype */
+.teacherMenu{display:grid;grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr);gap:12px;align-items:start}
+.settingsFields{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.fieldLabel{font:900 12px "Courier New";color:#294361;margin:0 0 5px;text-transform:uppercase}
+.menuButton{width:100%;margin:8px 0 0}
+.teacherHowTo{margin-top:12px;padding:10px;background:#fff8d9;border:3px solid #152945}
+.teacherHowTo summary{cursor:pointer;font:900 13px "Courier New";color:#152945}
+.teacherHowTo div{font:700 11px "Courier New";line-height:1.5;margin-top:8px}
+.vocabCard textarea{margin-top:10px}
+.shareBlock{margin-top:12px;padding-top:12px;border-top:3px solid #152945}
+#shareStudentLink{font-size:16px;padding:12px}
+.finalPlay{margin:14px 0 0;padding:14px;font-size:20px}
+body.studentMode #menu>.teacherMenu{display:none!important}
+@media(max-width:760px){
+.teacherMenu{grid-template-columns:1fr;gap:10px}
+.settingsFields{grid-template-columns:1fr}
+.card{padding:12px}
+textarea{height:34vh;min-height:210px;font-size:16px}
+select{min-height:48px;font-size:16px}
+button{min-height:48px}
+#shareStudentLink,.finalPlay{min-height:56px}
+}
+.screen{display:none}.screen.active{display:block}button{cursor:pointer;font:900 14px "Courier New";padding:10px 14px;margin:4px;border:4px solid #152945;background:#79d85b;color:#102744}.buttons{text-align:center}</style></head><body><main class="app"><div class="logo">WORD RACER</div><div style="position:fixed;top:4px;right:4px;z-index:10000"></div><section id="game" class="screen"><div class="hud"><div>SCORE <span id="score">0</span> · <span id="lives">❤❤❤</span></div><div id="target" class="target"></div><div id="progress" class="progress"></div></div>
+<div id="wrap" class="wrap"><canvas id="canvas"></canvas><div id="toast" class="toast"></div><div id="pauseOverlay" class="overlay"><div><div class="big" style="color:#f3d64e">PAUSED</div></div></div><div id="gameOver" class="overlay"><div><div class="big">GAME OVER</div><div class="msg">Nice try, your grandma would be proud</div><button id="again" class="primary">PLAY AGAIN</button><button id="overMenu" class="pink">MAIN MENU</button></div></div></div>
+<div class="buttons"><button id="pause" class="yellow">PAUSE</button><button id="restart">RESTART</button><button id="mainMenu" class="pink">MAIN MENU</button><button id="sound">🔊 SOUND ON</button></div>
+<div id="mobileControls" class="mobile-controls" aria-label="Touch controls"><button id="touchLeft" type="button">◀<br>LEFT</button><button id="touchBoost" class="boost" type="button">▲<br>BOOST</button><button id="touchRight" type="button">▶<br>RIGHT</button><button id="touchFire" class="fire" type="button">● FIRE</button></div><div class="tip">DRIVE: ← → / A D · FIRE: SPACE · ACCELERATE: ↑ / W · PAUSE: P</div></section></main><script>(function(){"use strict";
+function E(x){return document.getElementById(x)} var game=E("game"),canvas=E("canvas"),ctx=canvas.getContext("2d"),wrap=E("wrap");
+
+var W=900,H=600,DPR=1,vocab=[],queue=[],current=null,cars=[],shots=[],misses={},score=0,lives=3,round=1,done=0,speed=.16,spawnGap=1700,lastSpawn=0,lastTime=0,running=false,paused=false,soundOn=true,audioCtx=null,lang="de-DE",raf=0,invincible=0,roadScroll=0,keys={},boostFactor=1;
+var player={x:.5,y:.80,w:.075,h:.14};
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
+function build(){queue=shuffle(vocab);var r=vocab.filter(function(v){return(misses[v.id]||0)>0});queue=queue.concat(shuffle(r));done=0}
+function next(){if(!queue.length){round++;speed=Math.min(.28,speed*1.08);spawnGap=Math.max(1050,spawnGap*.92);build();flash("ROUND "+round+" · SPEED UP!",1)}current=queue.shift();hud()}
+function hud(){E("score").textContent=score;E("lives").textContent="❤".repeat(Math.max(0,lives));E("target").innerHTML="FIND: <b>"+current.prompt.toUpperCase()+"</b>";E("progress").textContent="ROUND "+round+" · "+Math.min(done,vocab.length)+"/"+vocab.length+" WORDS"}
+function start(pairs,locale){if(!Array.isArray(pairs)||pairs.length<5)return false;lang=locale||"es-ES";vocab=pairs.map(function(p,i){return{id:i,target:p[0],prompt:p[1]}});score=0;lives=3;round=1;done=0;misses={};speed=.16;spawnGap=1700;cars=[];shots=[];player.x=.5;invincible=0;roadScroll=0;boostFactor=1;keys={};running=true;paused=false;lastSpawn=0;lastTime=0;build();next();game.classList.add("active");E("gameOver").classList.remove("show");E("pauseOverlay").classList.remove("show");E("pause").textContent="PAUSE";E("toast").style.display="none";resize();cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);return true}
+function spawn(){var correctPresent=cars.some(function(c){return c.pair.id===current.id&&!c.dead}),pair;if(!correctPresent&&Math.random()<.48)pair=current;else pair=vocab[Math.floor(Math.random()*vocab.length)];var lanes=[.35,.5,.65];cars.push({x:lanes[Math.floor(Math.random()*3)],y:-.13,w:.105,h:.16,pair:pair,dead:false,style:Math.floor(Math.random()*4)})}
+function rect(x,y,w,h){return{x:x-w/2,y:y-h/2,w:w,h:h}}function hit(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
+function correct(c){c.dead=true;score++;done++;misses[current.id]=Math.max(0,(misses[current.id]||0)-1);good();var t=c.pair.target;setTimeout(function(){speak(t)},130);flash("✓ "+t.toUpperCase(),1);next()}
+function wrong(c){c.dead=true;misses[current.id]=Math.min(2,(misses[current.id]||0)+1);hurt("✕ "+c.pair.target.toUpperCase())}
+function answer(c){if(c.pair.id===current.id)correct(c);else wrong(c)}
+function hurt(m){if(invincible>0)return;lives--;invincible=1;bad();flash(m,0);hud();if(lives<=0){running=false;E("gameOver").classList.add("show")}}
+function fire(){if(!running||paused)return;shots.push({x:player.x,y:player.y-.09});beep(520,.04,760)}
+function update(dt,now){
+var targetBoost=keys.boost?1.85:1;
+boostFactor+=(targetBoost-boostFactor)*Math.min(1,dt*8);
+var driveSpeed=speed*boostFactor;
+
+roadScroll+=driveSpeed*dt;if(invincible>0)invincible-=dt;var move=.48*dt;if(keys.left)player.x-=move;if(keys.right)player.x+=move;player.x=Math.max(.30,Math.min(.70,player.x));if(now-lastSpawn>spawnGap/boostFactor){spawn();lastSpawn=now}cars.forEach(function(c){c.y+=driveSpeed*dt});shots.forEach(function(s){s.y-=.75*dt});
+var pb=rect(player.x,player.y,player.w*.68,player.h*.82);cars.forEach(function(c){if(c.dead)return;if(hit(pb,rect(c.x,c.y,c.w*.68,c.h*.78)))answer(c)});
+shots.forEach(function(s){if(s.dead)return;for(var i=0;i<cars.length;i++){var c=cars[i];if(!c.dead&&hit({x:s.x-.008,y:s.y-.02,w:.016,h:.04},rect(c.x,c.y,c.w*.72,c.h*.82))){s.dead=true;answer(c);break}}});
+cars=cars.filter(function(c){return!c.dead&&c.y<1.18});shots=shots.filter(function(s){return!s.dead&&s.y>-.1})}
+function audio(){if(!soundOn)return null;try{var A=window.AudioContext||window.webkitAudioContext;if(!A)return null;if(!audioCtx)audioCtx=new A();if(audioCtx.state==="suspended")audioCtx.resume();return audioCtx}catch(e){return null}}
+function beep(f,d,e){var a=audio();if(!a)return;try{var o=a.createOscillator(),g=a.createGain(),n=a.currentTime;o.type="square";o.frequency.setValueAtTime(f,n);if(e)o.frequency.exponentialRampToValueAtTime(e,n+d);g.gain.setValueAtTime(.035,n);g.gain.exponentialRampToValueAtTime(.0001,n+d);o.connect(g);g.connect(a.destination);o.start();o.stop(n+d)}catch(x){}}
+function good(){beep(440,.06);setTimeout(function(){beep(660,.07)},60);setTimeout(function(){beep(880,.09)},125)}function bad(){beep(170,.17,75)}
+function speak(t){if(!soundOn)return false;window.parent.postMessage({type:"BT_RACER_SPEAK",text:t,language:lang},location.origin);return true}
+function stopPronunciation(){window.parent.postMessage({type:"BT_RACER_CANCEL_SPEECH"},location.origin)}
+function unlockSpeechAudio(){audio()}
+function flash(t,ok){var x=E("toast");x.textContent=t;x.style.color=ok?"#79ff70":"#ff6b77";x.style.display="block";clearTimeout(flash.t);flash.t=setTimeout(function(){x.style.display="none"},600)}
+function car(x,y,w,h,style,playerCar){var X=x*W,Y=y*H,ww=w*W,hh=h*H,cols=["#df3e4f","#3d79c7","#e7b43b","#5bbd62"],c=playerCar?"#df3e4f":cols[style%4];ctx.fillStyle="#151820";ctx.fillRect(X-ww*.43,Y-hh*.5,ww*.86,hh);ctx.fillStyle=c;ctx.fillRect(X-ww*.34,Y-hh*.44,ww*.68,hh*.88);ctx.fillStyle="#a9d8ec";ctx.fillRect(X-ww*.25,Y-hh*.22,ww*.5,hh*.28);ctx.fillStyle="#f7e47a";ctx.fillRect(X-ww*.29,Y-hh*.43,ww*.14,hh*.08);ctx.fillRect(X+ww*.15,Y-hh*.43,ww*.14,hh*.08);ctx.fillStyle="#252933";ctx.fillRect(X-ww*.47,Y-hh*.3,ww*.12,hh*.24);ctx.fillRect(X+ww*.35,Y-hh*.3,ww*.12,hh*.24);ctx.fillRect(X-ww*.47,Y+hh*.16,ww*.12,hh*.24);ctx.fillRect(X+ww*.35,Y+hh*.16,ww*.12,hh*.24)}
+function draw(){ctx.clearRect(0,0,W,H);ctx.fillStyle="#397f45";ctx.fillRect(0,0,W,H);var L=W*.25,R=W*.75;ctx.fillStyle="#30353b";ctx.fillRect(L,0,R-L,H);ctx.fillStyle="#ddd5b7";ctx.fillRect(L,0,6,H);ctx.fillRect(R-6,0,6,H);var off=(roadScroll*H*3)%70;ctx.fillStyle="#f5e36e";for(var y=-70+off;y<H;y+=70){ctx.fillRect(W*.415,y,5,34);ctx.fillRect(W*.58,y,5,34)}
+/* roadside pixel scenery */for(var i=0;i<8;i++){var yy=((i*115+roadScroll*H*1.5)%(H+120))-60;ctx.fillStyle="#1f623a";ctx.fillRect(W*.08,yy,36,36);ctx.fillRect(W*.84,yy+45,42,42);ctx.fillStyle="#55ad52";ctx.fillRect(W*.07,yy-10,52,30);ctx.fillRect(W*.83,yy+32,58,30)}
+cars.forEach(function(c){car(c.x,c.y,c.w,c.h,c.style,false);ctx.font="900 "+Math.max(11,Math.min(16,H*.025))+"px Courier New";ctx.textAlign="center";ctx.textBaseline="middle";var tw=Math.min(Math.max(c.w*W,ctx.measureText(c.pair.target).width+16),W*.22);ctx.fillStyle="#152945";ctx.fillRect(c.x*W-tw/2-2,c.y*H-12,tw+4,24);ctx.fillStyle="#f3d64e";ctx.fillRect(c.x*W-tw/2,c.y*H-10,tw,20);ctx.fillStyle="#152945";ctx.fillText(c.pair.target,c.x*W,c.y*H,tw-6)});
+shots.forEach(function(s){ctx.fillStyle="#6ffaff";ctx.fillRect(s.x*W-3,s.y*H-12,6,22)});ctx.save();if(invincible>0&&Math.floor(invincible*12)%2===0)ctx.globalAlpha=.35;car(player.x,player.y,player.w,player.h,0,true);ctx.restore();
+if(current){ctx.font="900 "+Math.max(10,Math.min(14,H*.022))+"px Courier New";var t=current.prompt.toUpperCase(),tw=Math.min(ctx.measureText(t).width+16,W*.22),x=player.x*W-tw/2,y=player.y*H+player.h*H*.55;ctx.fillStyle="#152945";ctx.fillRect(x-2,y-2,tw+4,25);ctx.fillStyle="#fff8d9";ctx.fillRect(x,y,tw,21);ctx.fillStyle="#b52f49";ctx.textAlign="center";ctx.fillText(t,player.x*W,y+11,tw-5)}}
+function h(c){return c.h*H}
+function resize(){var r=wrap.getBoundingClientRect();W=Math.max(320,r.width);H=Math.max(350,r.height);DPR=Math.max(1,devicePixelRatio||1);canvas.width=W*DPR;canvas.height=H*DPR;canvas.style.width=W+"px";canvas.style.height=H+"px";ctx.setTransform(DPR,0,0,DPR,0,0);draw()}
+function loop(n){if(!running||paused)return;if(!lastTime)lastTime=n;var dt=Math.min(.035,(n-lastTime)/1000);lastTime=n;update(dt,n);draw();if(running)raf=requestAnimationFrame(loop)}
+function pause(){if(!running)return;paused=!paused;E("pauseOverlay").classList.toggle("show",paused);E("pause").textContent=paused?"RESUME":"PAUSE";if(!paused){lastTime=0;raf=requestAnimationFrame(loop)}}
+E("again").onclick=function(){start(vocab.map(function(p){return[p.target,p.prompt]}),lang)};E("restart").onclick=E("again").onclick;E("mainMenu").onclick=function(){running=false;paused=false;keys={};cancelAnimationFrame(raf);stopPronunciation();E("pauseOverlay").classList.remove("show");E("gameOver").classList.remove("show");E("pause").textContent="PAUSE";E("toast").style.display="none";game.classList.remove("active");window.parent.postMessage({type:"BT_RACER_MENU"},location.origin)};E("overMenu").onclick=E("mainMenu").onclick;E("pause").onclick=pause;
+E("sound").onclick=function(){soundOn=!soundOn;this.textContent=soundOn?"🔊 SOUND ON":"🔇 SOUND OFF";if(!soundOn)stopPronunciation()};
+window.addEventListener("keydown",function(e){
+  var k=e.key.toLowerCase();
+  if(!game.classList.contains("active"))return;
+  if(e.code==="Space"||k==="arrowup"||k==="arrowdown"||k==="arrowleft"||k==="arrowright"||k==="w"||k==="a"||k==="d"){
+    e.preventDefault();
+  }
+  if(k==="arrowleft"||k==="a")keys.left=true;
+  if(k==="arrowright"||k==="d")keys.right=true;
+  if(e.code==="Space"&&!e.repeat)fire();
+  if(k==="arrowup"||k==="w")keys.boost=true;
+  if(k==="p"&&!e.repeat)pause();
+},{passive:false});
+window.addEventListener("keyup",function(e){
+  var k=e.key.toLowerCase();
+  if(game.classList.contains("active")&&(k==="arrowup"||k==="arrowdown"||k==="arrowleft"||k==="arrowright"||k==="w"||k==="a"||k==="d"))e.preventDefault();
+  if(k==="arrowleft"||k==="a")keys.left=false;
+  if(k==="arrowright"||k==="d")keys.right=false;
+  if(k==="arrowup"||k==="w")keys.boost=false;
+},{passive:false});function bindHold(id,key){var b=E(id);function on(e){e.preventDefault();keys[key]=true;if(b.setPointerCapture)try{b.setPointerCapture(e.pointerId)}catch(x){}}function off(e){if(e)e.preventDefault();keys[key]=false}b.addEventListener("pointerdown",on,{passive:false});b.addEventListener("pointerup",off,{passive:false});b.addEventListener("pointercancel",off,{passive:false});b.addEventListener("lostpointercapture",off,{passive:false})}
+bindHold("touchLeft","left");bindHold("touchRight","right");bindHold("touchBoost","boost");E("touchFire").addEventListener("pointerdown",function(e){e.preventDefault();fire()},{passive:false});
+
+window.addEventListener("resize",resize);
+window.addEventListener("message",function(event){if(event.origin!==location.origin||(event.source!==window.parent&&event.source!==window))return;var d=event.data||{};if(d.type==="BT_RACER_PING"){window.parent.postMessage({type:"BT_RACER_READY"},location.origin)}if(d.type==="BT_RACER_START"){try{var p=d.pairs;if(!Array.isArray(p)||p.length<5||p.length>200||p.some(function(x){return !Array.isArray(x)||x.length<2||typeof x[0]!=="string"||typeof x[1]!=="string"||!x[0].trim()||!x[1].trim()}))throw Error("Invalid vocabulary");if(!start(p,d.language))throw Error("Start rejected");window.parent.postMessage({type:"BT_RACER_STARTED"},location.origin)}catch(e){window.parent.postMessage({type:"BT_RACER_START_FAILED",error:String(e.message||e)},location.origin)}}});
+window.parent.postMessage({type:"BT_RACER_READY"},location.origin);})();
+</script></body></html>
