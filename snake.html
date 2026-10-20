@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Word Snake — Boring Teacher Core Integration Preview</title>
+<link rel="stylesheet" href="./styles/menu.css">
+<style>
+body{margin:0;background:#10192e;color:#f8f8ff;font-family:"Courier New",monospace}
+#snakeFrame{display:none;width:100%;height:calc(100dvh - 12px);min-height:600px;border:0;background:#16264e}
+#snakeFrame.playing{display:block}
+#app{max-width:1100px;margin:8px auto}
+</style></head>
+<body><main id="app"></main><iframe id="snakeFrame" title="Word Snake gameplay" src="./snake-game.html"></iframe>
+<script type="module">
+import { mountTeacherMenu,mountStudentMenu } from "./core/menu.js";
+import { createSharingClient,readStudentSetId } from "./core/sharing.js";
+import { createVoiceService } from "./core/voice.js";
+import { WAREHOUSE_CATEGORIES } from "./core/warehouse-categories.js";
+const root=document.getElementById("app"),frame=document.getElementById("snakeFrame");
+const sharing=createSharingClient({apiBaseUrl:"https://boringteacher-vocabulary-api.mcproductionsdk.workers.dev"});
+const voice=createVoiceService();let menu=null;
+const instructions="ARROW KEYS / WASD = steer · P = pause. Eat the correct target-language word. Wrong words cost a life. The snake wraps around the edges.";
+const options={title:"WORD SNAKE",instructions,categories:WAREHOUSE_CATEGORIES,defaultCategory:"Animals",defaultText:"",previewGameUrl:location.href,onPlay:start};
+function start(vocabulary){
+ menu?.destroy();menu=null;root.hidden=true;frame.classList.add("playing");
+ const deliver=()=>frame.contentWindow.postMessage({type:"BT_SNAKE_START",vocabulary},location.origin);
+ if(frame.contentDocument?.readyState==="complete")deliver();else frame.addEventListener("load",deliver,{once:true});
+ frame.focus();
+}
+function showMenu(){
+ frame.classList.remove("playing");root.hidden=false;
+ menu?.destroy();menu=null;voice.cancel();
+ menu=readStudentSetId(location.href)?mountStudentMenu(root,{sharing,voice},{...options,studentUrl:location.href}):mountTeacherMenu(root,{sharing,voice},options);
+}
+window.addEventListener("message",e=>{if(e.origin===location.origin&&e.source===frame.contentWindow&&e.data?.type==="BT_SNAKE_MENU")showMenu()});
+showMenu();
+</script></body></html>
