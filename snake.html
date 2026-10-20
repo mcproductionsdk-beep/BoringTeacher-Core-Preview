@@ -31,15 +31,15 @@ function start(vocabulary){
  deliverSnake();
  frame.focus();
 }
-function showMenu(){
+function showMenu(forceTeacher=false){
  frame.classList.remove("playing");root.hidden=false;
  menu?.destroy();menu=null;voice.cancel();
- menu=readStudentSetId(location.href)?mountStudentMenu(root,{sharing,voice},{...options,studentUrl:location.href}):mountTeacherMenu(root,{sharing,voice},options);
+ menu=!forceTeacher&&readStudentSetId(location.href)?mountStudentMenu(root,{sharing,voice},{...options,studentUrl:location.href}):mountTeacherMenu(root,{sharing,voice},options);
 }
 window.addEventListener("message",e=>{
  if(e.origin!==location.origin||e.source!==frame.contentWindow)return;
  if(e.data?.type==="BT_SNAKE_READY"){snakeReady=true;deliverSnake();}
- if(e.data?.type==="BT_SNAKE_MENU")showMenu();
+ if(e.data?.type==="BT_SNAKE_MENU"){history.replaceState(null,"",location.pathname+location.search);showMenu(true);}
  if(e.data?.type==="BT_SNAKE_START_FAILED"){frame.classList.remove("playing");root.hidden=false;root.textContent="Word Snake could not start. Please refresh and try again.";}
 });
 showMenu();
