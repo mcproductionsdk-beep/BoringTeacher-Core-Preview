@@ -10,7 +10,7 @@ body{margin:0;background:#10192e;color:#f8f8ff;font-family:"Courier New",monospa
 </style></head>
 <body><main id="app"></main><iframe id="snakeFrame" title="Word Snake gameplay" src="./snake-game.html?core-build=15655e7394b5"></iframe>
 <script type="module">
-import { mountTeacherMenu,mountStudentMenu } from "./core/menu.js";
+import { mountTeacherMenu,mountStudentMenu } from "./core/menu.js?build=f618791a";
 import { createSharingClient,readStudentSetId } from "./core/sharing.js";
 import { createVoiceService } from "./core/voice.js";
 import { WAREHOUSE_CATEGORIES } from "./core/warehouse-categories.js";
@@ -35,7 +35,7 @@ function start(vocabulary){
 function showMenu(forceTeacher=false){
  frame.classList.remove("playing");root.hidden=false;
  menu?.destroy();menu=null;voice.cancel();
- menu=!forceTeacher&&readStudentSetId(location.href)?mountStudentMenu(root,{sharing,voice},{...options,studentUrl:location.href}):mountTeacherMenu(root,{sharing,voice},options);
+ menu=!forceTeacher&&readStudentSetId(location.href)?mountStudentMenu(root,{sharing,voice},{...options,studentUrl:location.href,onRecover:()=>{history.replaceState(null,"",location.pathname+location.search);showMenu(true);}}):mountTeacherMenu(root,{sharing,voice},options);
 }
 window.addEventListener("message",e=>{
  if(e.origin!==location.origin||e.source!==frame.contentWindow)return;
