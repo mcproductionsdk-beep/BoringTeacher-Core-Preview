@@ -66,55 +66,11 @@ button{min-height:48px}
 
 body.studentMode #teacherGrid{display:none!important}
 </style></head><body><main class="app"><div class="logo">WORD SNAKE</div>
-<section id="menu" class="screen active">
-<div id="studentIntro">
-  <div class="studentTitle" id="studentSetTitle">VOCABULARY SET</div>
-  <div class="studentMeta" id="studentSetMeta">READY TO PLAY</div>
-  <button id="studentPlay" class="primary" type="button">PLAY</button>
-  <details class="howTo">
-    <summary>▶ HOW TO PLAY</summary>
-    <div>ARROW KEYS / WASD = STEER<br>Eat the correct target-language word. Wrong words cost a life. The snake wraps around the edges.</div>
-  </details>
-</div>
-<div class="teacherMenu">
-  <div class="card settingsCard">
-    <h2>GAME SETTINGS</h2>
-    <div class="help">Choose the language and vocabulary you want to practise.</div>
-    <div class="settingsFields">
-      <div><div class="fieldLabel">Language</div><select id="language"><option value="de-DE">German</option><option value="es-ES">Spanish</option><option value="da-DK">Danish</option><option value="en-US">English</option></select></div>
-      <div><div class="fieldLabel">Vocabulary</div><select id="category"></select></div>
-    </div>
-    <div id="voiceCheck" class="preview"><b>VOICE:</b> checking…</div>
-    <button id="testVoice" class="yellow menuButton" type="button">🔊 TEST VOICE</button>
-    <details class="teacherHowTo">
-      <summary>▶ HOW TO PLAY</summary>
-      <div>ARROW KEYS / WASD = steer · P = pause<br>Eat the correct target-language word. Wrong words cost a life. The snake wraps around the edges.</div>
-    </details>
-  </div>
-  <div class="card vocabCard">
-    <h2>YOUR VOCABULARY</h2>
-    <div class="help">Use a ready-made list above, or paste/edit your own Quizlet-style term and definition pairs.</div>
-    <textarea id="words">gucken	to watch, to look at
-fahren	to drive
-essen	to eat
-trinken	to drink
-schlafen	to sleep
-lesen	to read
-schreiben	to write
-sprechen	to speak
-gehen	to go
-kommen	to come
-spielen	to play
-lernen	to learn</textarea>
-    <button id="swap" type="button" class="menuButton">⇄ SWAP SIDES</button>
-    <div id="preview" class="preview"></div><div id="error" class="error"></div>
-    <div class="shareBlock">
-      <button id="shareStudentLink" class="pink menuButton" type="button">🔗 SHARE WITH STUDENTS</button>
-      <div class="stepHint" id="shareStatus">Creates a permanent student link for exactly the vocabulary shown above.</div>
-    </div>
-    <button id="play" class="primary wide finalPlay teacherOnly" type="button">PLAY</button>
-  </div>
-</div></section>
+<section id="menu" hidden aria-hidden="true" style="display:none!important">
+<input id="words" type="hidden"><select id="language"><option value="es-ES">Spanish</option><option value="de-DE">German</option><option value="da-DK">Danish</option><option value="en-US">English</option></select><select id="category"><option value="custom">Custom</option></select>
+<div id="preview"></div><div id="error"></div><div id="voiceCheck"></div>
+<button id="play" type="button"></button><button id="swap" type="button"></button><button id="testVoice" type="button"></button><button id="shareStudentLink" type="button"></button><div id="shareStatus"></div><button id="studentPlay" type="button"></button><div id="studentSetTitle"></div><div id="studentSetMeta"></div>
+</section>
 <section id="game" class="screen"><div class="hud"><div>SCORE <span id="score">0</span> · <span id="lives">❤❤❤</span></div><div id="target" class="target"></div><div id="progress" class="progress"></div></div><div id="wrap" class="wrap"><canvas id="canvas"></canvas><div id="toast" class="toast"></div><div id="pauseOverlay" class="overlay"><div class="big" style="color:#f2d64b">PAUSED</div></div><div id="gameOver" class="overlay"><div><div class="big">GAME OVER</div><div class="msg">Nice try, your grandma would be proud</div><button id="again" class="primary">PLAY AGAIN</button><button id="overMenu" class="pink">MAIN MENU</button></div></div></div><div class="buttons"><button id="pause" class="yellow">PAUSE</button><button id="restart">RESTART</button><button id="mainMenu" class="pink">MAIN MENU</button><button id="fullscreen" class="yellow">⛶ EXPAND GAME</button><button id="sound">🔊 SOUND ON</button></div><div class="mobile-controls" aria-label="Snake touch steering">
 <button type="button" class="up" id="touchUp" aria-label="Steer up">▲</button>
 <button type="button" class="left" id="touchLeft" aria-label="Steer left">◀</button>
@@ -295,63 +251,21 @@ canvas.addEventListener("pointercancel",function(){swipeStart=null});
 window.addEventListener("blur",function(){swipeStart=null});
 window.addEventListener("resize",resize);
 
-var VOCAB_API="https://boringteacher-vocabulary-api.mcproductionsdk.workers.dev";
-var lastStudentLink="",sharingBusy=false;
-function currentSetTitle(){var s=E("category");return s&&s.value!=="custom"?s.options[s.selectedIndex].text:"Custom Vocabulary"}
-async function createStudentLink(){
- var pairs=parse(ta.value);
- if(pairs.length<5){E("shareStatus").textContent="Please add at least 5 valid word pairs first.";return}
- if(sharingBusy)return;sharingBusy=true;
- var b=E("shareStudentLink"),old=b.textContent;b.disabled=true;b.textContent="SAVING…";E("shareStatus").textContent="Saving this vocabulary set…";
- try{
-  var controller=new AbortController();var timer=setTimeout(function(){controller.abort()},12000);var response;try{response=await fetch(VOCAB_API+"/sets",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({title:currentSetTitle(),language:E("language").value,pairs:pairs}),signal:controller.signal})}finally{clearTimeout(timer)}
-  var data=null;try{data=await response.json()}catch(pe){}
-  if(!response.ok)throw new Error(data&&(data.error||data.message)?(data.error||data.message):"HTTP "+response.status);
-  var setId=data&&(data.id||data.setId||(data.set&&data.set.id));if(!setId)throw new Error("No set ID returned.");
-  var u=new URL(location.href);u.search="";u.hash="set="+encodeURIComponent(setId);lastStudentLink=u.toString();
-  E("shareStatus").textContent="✓ LINK READY: "+lastStudentLink;
- }catch(err){console.error("Could not create vocabulary set:",err);lastStudentLink="";E("shareStatus").textContent="Could not save this set: "+(err.name==="AbortError"?"Request timed out":err.message||"Unknown error")}
- finally{sharingBusy=false;b.disabled=false;b.textContent=old}
-}
-async function copyStudentLink(){
- if(!lastStudentLink)return;
- try{await navigator.clipboard.writeText(lastStudentLink)}catch(e){var x=document.createElement("textarea");x.value=lastStudentLink;document.body.appendChild(x);x.select();document.execCommand("copy");x.remove()}
- E("shareStatus").textContent="✓ LINK COPIED: "+lastStudentLink
-}
-function normalizeLoadedPairs(data){var pairs=data&&(data.pairs||data.vocabulary||(data.set&&(data.set.pairs||data.set.vocabulary)));if(typeof pairs==="string"){try{pairs=JSON.parse(pairs)}catch(e){pairs=null}}return Array.isArray(pairs)?pairs:null}
-async function loadStudentSet(){
- if(!location.hash.startsWith("#set="))return false;
- var setId="";try{setId=decodeURIComponent(location.hash.slice(5)).trim()}catch(e){return false}if(!setId)return false;
- document.body.classList.add("studentMode");E("studentSetTitle").textContent="LOADING VOCABULARY…";E("studentSetMeta").textContent="PLEASE WAIT";E("studentPlay").disabled=true;
- try{
-  var response=await fetch(VOCAB_API+"/sets/"+encodeURIComponent(setId),{method:"GET",headers:{"Accept":"application/json"}});
-  var data=null;try{data=await response.json()}catch(pe){}
-  if(!response.ok)throw new Error(data&&(data.error||data.message)?(data.error||data.message):"HTTP "+response.status);
-  var pairs=normalizeLoadedPairs(data);if(!pairs||pairs.length<5)throw new Error("Set has fewer than 5 valid word pairs.");
-  var locale=data.language||data.lang||(data.set&&(data.set.language||data.set.lang)),title=data.title||(data.set&&data.set.title)||"Teacher Vocabulary";
-  if(locale&&Array.from(E("language").options).some(function(o){return o.value===locale})){E("language").value=locale;lang=locale;cats(false);updateVoiceCheck()}
-  ta.value=pairs.map(function(pair){return pair[0]+"\t"+pair[1]}).join("\n");E("category").value="custom";preview();
-  E("studentSetTitle").textContent=String(title).toUpperCase();var langName=E("language").options[E("language").selectedIndex].text;
-  E("studentSetMeta").textContent=langName.toUpperCase()+" · "+pairs.length+" WORDS · SET "+setId;E("studentPlay").disabled=false;return true;
- }catch(err){console.error("Could not load vocabulary set:",err);E("studentSetTitle").textContent="SET COULD NOT BE LOADED";E("studentSetMeta").textContent="CHECK THE LINK OR ASK YOUR TEACHER FOR A NEW ONE";E("studentPlay").disabled=true;return false}
-}
-E("shareStudentLink").onclick=async function(){await createStudentLink();if(lastStudentLink)await copyStudentLink()};E("studentPlay").onclick=function(){if(!this.disabled)E("play").click()};window.addEventListener("hashchange",loadStudentSet);
-cats(false);preview();loadStudentSet();
+/* Core owns categories, vocabulary, voice testing and student sharing. */
+window.BTSnake={start:function(payload){
+ if(!payload||!Array.isArray(payload.pairs)||payload.pairs.length<5)return false;
+ E("language").value=payload.language;
+ ta.value=payload.pairs.map(function(pair){return pair[0]+"\t"+pair[1]}).join("\n");
+ E("category").value="custom";
+ start();
+ return game.classList.contains("active");
+}};
 })();</script><script>
-/* Isolated Core integration bridge. The original snake engine is unchanged. */
-/* In Core mode the legacy menu must never flash or become the entry screen. */
-document.getElementById("menu").style.display="none";
 parent.postMessage({type:"BT_SNAKE_READY"},location.origin);
-
 window.addEventListener("message",function(event){
- if(event.origin!==location.origin||!event.data||event.data.type!=="BT_SNAKE_START")return;
- var payload=event.data.vocabulary;
- if(!payload||!Array.isArray(payload.pairs)||payload.pairs.length<5)return;
- document.getElementById("language").value=payload.language;
- document.getElementById("words").value=payload.pairs.map(function(pair){return pair[0]+"\t"+pair[1]}).join("\n");
- document.getElementById("category").value="custom";
- document.getElementById("play").click();
- parent.postMessage({type:document.getElementById("game").classList.contains("active")?"BT_SNAKE_STARTED":"BT_SNAKE_START_FAILED"},location.origin);
+ if(event.origin!==location.origin||event.source!==parent||event.data?.type!=="BT_SNAKE_START")return;
+ var started=window.BTSnake?.start(event.data.vocabulary);
+ parent.postMessage({type:started?"BT_SNAKE_STARTED":"BT_SNAKE_START_FAILED"},location.origin);
 });
 document.getElementById("mainMenu").addEventListener("click",function(){parent.postMessage({type:"BT_SNAKE_MENU"},location.origin)});
 document.getElementById("overMenu").addEventListener("click",function(){parent.postMessage({type:"BT_SNAKE_MENU"},location.origin)});
