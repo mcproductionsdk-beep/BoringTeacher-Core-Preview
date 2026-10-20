@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Word Warehouse — Boring Teacher</title>
+<link rel="stylesheet" href="./styles/menu.css">
+<style>html,body{overflow-x:hidden}html{overflow-y:auto}body{overflow-y:auto}body{margin:0;background:#10192e;color:#f8f8ff;font-family:"Courier New",monospace}#warehouseFrame{display:none;width:100%;height:calc(100dvh - 12px);min-height:600px;border:0;background:#16264e}#warehouseFrame.playing{display:block}#app{max-width:1100px;margin:8px auto}#app[hidden]{display:none!important}body:has(#warehouseFrame.playing) #app{display:none!important}</style></head>
+<body><main id="app"></main><iframe id="warehouseFrame" title="Word Warehouse gameplay" src="./warehouse-game.html?release=warehouse-core-preview-1"></iframe>
+<script type="module">
+import {mountTeacherMenu,mountStudentMenu} from './core/menu.js?release=student-unified-20261020';
+import {createSharingClient,readStudentSetId} from './core/sharing.js';
+import {createVoiceService} from './core/voice.js';
+import {WAREHOUSE_CATEGORIES} from './core/warehouse-categories.js';
+const root=document.getElementById('app'),frame=document.getElementById('warehouseFrame');
+const sharing=createSharingClient({apiBaseUrl:'https://boringteacher-vocabulary-api.mcproductionsdk.workers.dev'});
+const voice=createVoiceService();let menu=null,ready=false,pending=null;
+const options={title:'WORD WAREHOUSE',instructions:'ARROW KEYS / WASD = move. Press SPACE at the central brick to pick up a word, then deliver it to the correct English translation box. Deliver eight words per round.',categories:WAREHOUSE_CATEGORIES,defaultCategory:'Animals',defaultText:'',previewGameUrl:location.href,onPlay:start};
+function deliver(){if(!ready||!pending)return;frame.contentWindow.postMessage({type:'BT_WAREHOUSE_START',pairs:pending.pairs,language:pending.language},location.origin);pending=null;}
+function start(vocabulary){pending=vocabulary;menu?.destroy();menu=null;root.hidden=true;root.style.setProperty('display','none','important');frame.classList.add('playing');deliver();frame.contentWindow?.postMessage({type:'BT_WAREHOUSE_PING'},location.origin);frame.focus();}
+function showMenu(forceTeacher=false){frame.classList.remove('playing');root.hidden=false;root.style.removeProperty('display');menu?.destroy();menu=null;voice.cancel();menu=!forceTeacher&&readStudentSetId(location.href)?mountStudentMenu(root,{sharing,voice},{...options,studentUrl:location.href,onRecover:()=>{history.replaceState(null,'',location.pathname+location.search);showMenu(true);}}):mountTeacherMenu(root,{sharing,voice},options);}
+window.addEventListener('message',e=>{if(e.origin!==location.origin||e.source!==frame.contentWindow)return;const d=e.data||{};
+if(d.type==='BT_WAREHOUSE_READY'){ready=true;deliver();}
+if(d.type==='BT_WAREHOUSE_SPEAK'&&typeof d.text==='string'&&d.text.length<=250&&['es-ES','de-DE','da-DK','en-US'].includes(d.language)){void voice.speak(d.text,d.language);}
+if(d.type==='BT_WAREHOUSE_CANCEL_SPEECH'){voice.cancel();}
+if(d.type==='BT_WAREHOUSE_MENU'){history.replaceState(null,'',location.pathname+location.search);showMenu(true);}
+if(d.type==='BT_WAREHOUSE_START_FAILED'){frame.classList.remove('playing');root.hidden=false;root.style.removeProperty('display');root.textContent='Word Warehouse could not start. Please check the vocabulary set.';}
+});
+window.addEventListener('keydown',e=>{if(frame.classList.contains('playing')&&['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();},{passive:false});
+frame.addEventListener('load',()=>{ready=false;frame.contentWindow?.postMessage({type:'BT_WAREHOUSE_PING'},location.origin);});
+showMenu();frame.contentWindow?.postMessage({type:'BT_WAREHOUSE_PING'},location.origin);
+</script></body></html>
