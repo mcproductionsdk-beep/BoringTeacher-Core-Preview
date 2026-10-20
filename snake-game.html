@@ -343,12 +343,11 @@ window.addEventListener("message",function(event){
  if(event.origin!==location.origin||!event.data||event.data.type!=="BT_SNAKE_START")return;
  var payload=event.data.vocabulary;
  if(!payload||!Array.isArray(payload.pairs)||payload.pairs.length<5)return;
- E("language").value=payload.language;
- ta.value=payload.pairs.map(function(pair){return pair[0]+"\t"+pair[1]}).join("\n");
- E("category").value="custom";
- preview();
- start();
+ document.getElementById("language").value=payload.language;
+ document.getElementById("words").value=payload.pairs.map(function(pair){return pair[0]+"\t"+pair[1]}).join("\n");
+ document.getElementById("category").value="custom";
+ document.getElementById("play").click();
 });
-E("mainMenu").addEventListener("click",function(){parent.postMessage({type:"BT_SNAKE_MENU"},location.origin)});
-E("overMenu").addEventListener("click",function(){parent.postMessage({type:"BT_SNAKE_MENU"},location.origin)});
+document.getElementById("mainMenu").addEventListener("click",function(){parent.postMessage({type:"BT_SNAKE_MENU"},location.origin)});
+document.getElementById("overMenu").addEventListener("click",function(){parent.postMessage({type:"BT_SNAKE_MENU"},location.origin)});
 </script></body></html>
