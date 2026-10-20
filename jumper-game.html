@@ -1,0 +1,587 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Word Jumper Pixel V5.6</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#87c9f2;color:#fff;font-family:"Courier New",monospace;image-rendering:pixelated}
+.app{width:min(1120px,calc(100vw - 12px));margin:6px auto;padding:10px;background:#17365f;border:5px solid #102744;box-shadow:0 0 0 4px #f3d64e;border-radius:0}
+.logo{text-align:center;color:#fff;font:900 clamp(26px,4vw,44px) "Courier New";letter-spacing:3px;margin:4px;text-shadow:4px 4px 0 #142746,-3px 0 #e84563,0 -3px #e84563}
+.screen{display:none}.screen.active{display:block}
+.grid{display:grid;grid-template-columns:1.4fr .7fr;gap:12px}
+.card{background:#f4e7bd;color:#152945;border:4px solid #152945;padding:12px;box-shadow:inset 0 0 0 3px #fff5d7}
+h2{color:#b52f49;font:900 18px "Courier New";margin:0 0 8px;text-shadow:1px 1px 0 #fff}
+.help{color:#294361;font-size:13px;line-height:1.45;font-weight:bold}
+textarea,select{width:100%;background:#fff8d9;color:#152945;border:4px solid #152945;border-radius:0;padding:10px;font:700 15px "Courier New"}
+textarea{height:min(40vh,300px);min-height:180px}
+button{font:900 14px "Courier New";padding:10px 14px;margin:4px;border:4px solid #152945;border-radius:0;background:#5cc5d8;color:#102744;cursor:pointer;box-shadow:inset -3px -3px 0 #2e7c9a,inset 3px 3px 0 #b8f5ee}
+button:active{transform:translate(2px,2px);box-shadow:inset 2px 2px 0 #2e7c9a}
+button:focus,select:focus,textarea:focus{outline:4px solid #f3d64e;outline-offset:2px}
+.primary{background:#79d85b;color:#102744}.yellow{background:#f3d64e;color:#152945}.pink{background:#ef6c88;color:#152945}.wide{width:100%;font-size:18px}
+.preview{margin-top:8px;padding:9px;background:#d8eef0;color:#19324e;border:3px solid #19324e;font-size:12px;line-height:1.45}.error{color:#b9223e;min-height:18px;font-size:12px;font-weight:bold}
+.hud{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;margin:7px 0;font:900 13px "Courier New";color:#fff;text-shadow:2px 2px 0 #102744}
+.target{text-align:center;background:#f3d64e;color:#152945;border:4px solid #152945;padding:8px;font-size:clamp(16px,2vw,24px);text-shadow:none}.target b{color:#b52f49}.progress{text-align:right}
+.wrap{height:min(66vh,620px);max-height:calc(100vh - 175px);min-height:360px;position:relative;background:#75c9ef;border:4px solid #102744}
+canvas{width:100%;height:100%;display:block;image-rendering:pixelated}
+.buttons{text-align:center}.tip{text-align:center;color:#d9edff;font-size:11px;margin-top:4px;font-weight:bold;text-shadow:2px 2px 0 #102744}
+.overlay{display:none;position:absolute;inset:0;background:#102744e8;z-index:5;align-items:center;justify-content:center;text-align:center}.overlay.show{display:flex}
+.big{font:900 clamp(28px,5vw,48px) "Courier New";color:#ef6c88;text-shadow:4px 4px 0 #000}.msg{font:900 clamp(17px,2.4vw,27px) "Courier New";margin:10px;color:#fff}
+.toast{display:none;position:absolute;left:50%;top:14%;transform:translateX(-50%);z-index:4;font:900 25px "Courier New";text-shadow:3px 3px 0 #102744}
+.mobile-controls{display:none}
+@media(max-width:760px){
+.grid{grid-template-columns:1fr}
+#game.active{display:flex;flex-direction:column}
+#game .buttons{order:1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;margin:2px 0 5px}
+#game .buttons button{margin:0;padding:8px 2px;font-size:10px;min-width:0}
+#game .hud{order:2;grid-template-columns:1fr 1fr;margin:4px 0}
+#game .target{grid-column:1/-1;grid-row:1}
+#game .wrap{order:3;height:58vh;max-height:none}
+#game .mobile-controls{order:4;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px 2px 3px}
+#game .mobile-controls button{margin:0;min-height:68px;font-size:17px;touch-action:none;user-select:none;-webkit-user-select:none}
+#game .mobile-controls .jump{background:#f3d64e}
+#game .mobile-controls .crouch{background:#5cc5d8}
+#game .tip{display:none}
+}
+</style>
+</head>
+<body>
+<main class="app">
+<div class="logo">WORD JUMPER</div>
+
+
+
+<section id="game" class="screen active">
+<div class="hud">
+<div>SCORE <span id="score">0</span> · <span id="lives">❤❤❤</span></div>
+<div id="target" class="target"></div>
+<div id="progress" class="progress"></div>
+</div>
+
+<div id="wrap" class="wrap">
+<canvas id="canvas"></canvas>
+<div id="toast" class="toast"></div>
+<div id="pauseOverlay" class="overlay"><div><div class="big" style="color:#ffe66d">PAUSED</div><div class="msg">Press P or RESUME</div></div></div>
+<div id="gameOver" class="overlay"><div><div class="big">GAME OVER</div><div class="msg">Nice try, your grandma would be proud</div><button id="again" type="button" class="primary">PLAY AGAIN</button><button id="overMenu" type="button" class="pink">MAIN MENU</button></div></div>
+</div>
+
+<div class="buttons">
+<button id="pause" type="button" class="yellow">PAUSE</button>
+<button id="restart" type="button">RESTART</button>
+<button id="mainMenu" type="button" class="pink">MAIN MENU</button>
+<button id="sound" type="button">🔊 SOUND ON</button>
+</div>
+<div id="mobileControls" class="mobile-controls" aria-label="Touch controls">
+<button id="touchJump" class="jump" type="button">▲<br>JUMP</button>
+<button id="touchCrouch" class="crouch" type="button">▼<br>CROUCH</button>
+</div>
+<div class="tip">JUMP: Space / ↑ / W · HOLD = HIGHER · CROUCH: ↓ / S · PAUSE: P</div>
+</section>
+</main>
+
+<script>
+(function(){
+"use strict";
+
+function E(id){ return document.getElementById(id); }
+
+var game=E("game"), canvas=E("canvas"), ctx=canvas.getContext("2d"), wrap=E("wrap");
+var W=900,H=540,DPR=1;
+var vocab=[], targetQueue=[], current=null, objects=[], misses={};
+var score=0,lives=3,round=1,roundDone=0;
+var speed=.19, spawnGap=2100, lastSpawn=0, lastTime=0;
+var running=false,paused=false,soundOn=true,targetLang="de-DE",raf=0,audioCtx=null;
+var jumpHeld=false,crouchHeld=false,invulnerable=0,worldScroll=0;
+var wrongSinceCorrect=0;
+var player={x:.18,y:0,vy:0,w:.066,h:.185,onGround:true,jumpHold:0};
+var GROUND=.82;
+var NORMAL_JUMP=-.72, GRAVITY=1.48, HOLD_FORCE=-1.00, MAX_HOLD=.29;
+
+function mobilePlay(){return window.matchMedia("(max-width:760px)").matches;}
+function playProfile(){
+  if(mobilePlay()){
+    return{
+      normalJump:-.72,
+      gravity:1.48,
+      holdForce:-1.00,
+      maxHold:.29,
+      speed:.22,
+      spawnGap:1700,
+      minSpawnGap:1350,
+      closeFollowChance:0,
+      closeFollowFactor:0
+    };
+  }
+  return{
+    normalJump:NORMAL_JUMP,
+    gravity:GRAVITY,
+    holdForce:HOLD_FORCE,
+    maxHold:MAX_HOLD,
+    speed:.19,
+    spawnGap:2100,
+    minSpawnGap:1550,
+    closeFollowChance:.16,
+    closeFollowFactor:.27
+  };
+}
+
+function shuffle(a){
+  a=a.slice();
+  for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t;}
+  return a;
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c];});}
+
+function buildTargetQueue(){
+  targetQueue=shuffle(vocab);
+  var retry=[];
+  for(var i=0;i<vocab.length;i++) if((misses[vocab[i].id]||0)>0) retry.push(vocab[i]);
+  if(retry.length) targetQueue=targetQueue.concat(shuffle(retry));
+  roundDone=0;
+}
+function chooseNextTarget(){
+  if(targetQueue.length===0){
+    round++;
+    speed=Math.min(.31,speed*1.085);
+    spawnGap=Math.max(playProfile().minSpawnGap,spawnGap*.93);
+    buildTargetQueue();
+    flash("ROUND "+round+" · A LITTLE FASTER",true);
+  }
+  current=targetQueue.shift();
+  enforceThreeWrongMaximum();
+  updateHud();
+}
+function updateHud(){
+  E("score").textContent=score;
+  E("lives").textContent="❤".repeat(Math.max(0,lives));
+  E("target").innerHTML="FIND: <b>"+escapeHtml(current.prompt.toUpperCase())+"</b>";
+  E("progress").textContent="ROUND "+round+" · "+Math.min(roundDone,vocab.length)+"/"+vocab.length+" WORDS";
+}
+
+var lastPairs=[],coreMode=false;
+var fallbackPairs=[
+ ["gucken","to watch"],["fahren","to drive"],["essen","to eat"],
+ ["trinken","to drink"],["schlafen","to sleep"],["lesen","to read"],
+ ["schreiben","to write"],["sprechen","to speak"],["gehen","to go"],
+ ["kommen","to come"],["spielen","to play"],["lernen","to learn"]
+];
+function validPairs(pairs){
+ if(!Array.isArray(pairs)||pairs.length<5||pairs.length>500)return null;
+ var result=[];
+ for(var i=0;i<pairs.length;i++){
+  var p=pairs[i],target,prompt;
+  if(Array.isArray(p)){target=p[0];prompt=p[1];}
+  else if(p&&typeof p==="object"){target=p.target;prompt=p.prompt;}
+  if(typeof target!=="string"||typeof prompt!=="string"||!target.trim()||!prompt.trim()||target.length>180||prompt.length>180)return null;
+  result.push([target.trim(),prompt.trim()]);
+ }
+ return result;
+}
+function notifyCore(type,extra){
+ if(window.parent===window)return;
+ window.parent.postMessage(Object.assign({type:type},extra||{}),location.origin);
+}
+function startGame(pairs,language){
+ var raw=validPairs(pairs);
+ if(!raw||!["de-DE","es-ES","da-DK","en-US"].includes(language)){
+  notifyCore("BT_JUMPER_START_FAILED");return false;
+ }
+ lastPairs=raw.map(function(p){return p.slice();});
+ targetLang=language;
+ vocab=raw.map(function(p,i){return{id:i,target:p[0],prompt:p[1]};});
+ score=0;lives=3;round=1;misses={};speed=playProfile().speed;spawnGap=playProfile().spawnGap;objects=[];wrongSinceCorrect=0;
+ player.y=GROUND-player.h;player.vy=0;player.onGround=true;player.jumpHold=0;
+ jumpHeld=false;crouchHeld=false;invulnerable=0;worldScroll=0;running=true;paused=false;lastSpawn=0;lastTime=0;
+ buildTargetQueue();chooseNextTarget();
+ E("gameOver").classList.remove("show");E("pauseOverlay").classList.remove("show");E("pause").textContent="PAUSE";E("toast").style.display="none";
+ game.classList.add("active");resize();
+ cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);
+ return true;
+}
+function restart(){if(lastPairs.length)startGame(lastPairs,targetLang);}
+function showMenu(){
+ running=false;paused=false;jumpHeld=false;crouchHeld=false;cancelAnimationFrame(raf);
+ E("pauseOverlay").classList.remove("show");E("gameOver").classList.remove("show");
+ E("pause").textContent="PAUSE";E("toast").style.display="none";
+ notifyCore("BT_JUMPER_CANCEL_SPEECH");notifyCore("BT_JUMPER_MENU");
+ 
+}
+function togglePause(){
+  if(!running)return;
+  paused=!paused;
+  if(paused){jumpHeld=false;crouchHeld=false;}
+  E("pauseOverlay").classList.toggle("show",paused);
+  E("pause").textContent=paused?"RESUME":"PAUSE";
+  if(!paused){lastTime=0;raf=requestAnimationFrame(loop);}
+}
+
+function beginJump(){
+  if(!running||paused||!player.onGround)return;
+  crouchHeld=false;
+  player.onGround=false;
+  player.vy=playProfile().normalJump;
+  player.jumpHold=0;
+  beep(310,.045,430);
+}
+function releaseJump(){jumpHeld=false;}
+
+function enforceThreeWrongMaximum(){
+  if(!current)return;
+  var upcoming=objects.filter(function(o){return !o.dead && o.x>player.x;})
+                      .sort(function(a,b){return a.x-b.x;});
+  var wrong=0;
+  for(var i=0;i<upcoming.length;i++){
+    var o=upcoming[i];
+    if(o.pair.id===current.id){
+      wrong=0;
+    }else{
+      if(wrong>=3){
+        o.pair=current;
+        o.correctAtSpawn=true;
+        wrong=0;
+      }else wrong++;
+    }
+  }
+  wrongSinceCorrect=wrong;
+}
+
+function makeWord(){
+  if(!current)return;
+  var forceCorrect = wrongSinceCorrect>=3;
+  var makeCorrect = forceCorrect || Math.random()<.40;
+  var pair;
+  if(makeCorrect){
+    pair=current;
+  }else{
+    var wrong=vocab.filter(function(v){return v.id!==current.id;});
+    pair=wrong[Math.floor(Math.random()*wrong.length)];
+    wrongSinceCorrect++;
+  }
+
+  var elevated=Math.random()<.38;
+  var y=elevated ? .665 : .765;
+  var width=Math.min(.23,Math.max(.12,.075+pair.target.length*.0085));
+  objects.push({
+    pair:pair,
+    correctAtSpawn:pair.id===current.id,
+    x:1.10,y:y,w:width,h:.095,
+    elevated:elevated,dead:false,handled:false
+  });
+}
+function spawnIfNeeded(now){
+  if(now-lastSpawn<spawnGap)return;
+  /* Learning-first spacing: sometimes a second word is a little closer,
+     but never a rapid wall of objects. */
+  makeWord();
+  enforceThreeWrongMaximum();
+  lastSpawn=now;
+  var profile=playProfile();
+  if(Math.random()<profile.closeFollowChance){
+    /* Mobile gets more landing room. Desktop keeps the original follow-up timing. */
+    lastSpawn=now-(spawnGap*profile.closeFollowFactor);
+  }
+}
+
+function playerBox(){
+  var crouching=crouchHeld&&player.onGround;
+  var h=crouching?player.h*.47:player.h;
+  var top=GROUND-h;
+  if(!player.onGround) top=player.y;
+  /* forgiving hitbox: smaller than drawing */
+  return{x:player.x-player.w*.34,y:top+h*.12,w:player.w*.68,h:h*.78};
+}
+function objectBox(o){
+  /* All vocabulary words have nearly the same gameplay footprint.
+     Long spellings may draw a wider card, but they are NOT harder to clear. */
+  var hitW=.072;
+  var hitH=o.h*.72;
+  return{x:o.x-hitW/2,y:o.y-hitH/2,w:hitW,h:hitH};
+}
+function overlaps(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;}
+
+function correctHit(o){
+  o.dead=true;
+  score++;
+  roundDone++;
+  misses[current.id]=Math.max(0,(misses[current.id]||0)-1);
+  goodSound();
+  var spoken=o.pair.target;
+  setTimeout(function(){if(running&&current)speak(spoken);},150);
+  flash("✓ "+spoken.toUpperCase(),true);
+  chooseNextTarget();
+}
+function wrongHit(o){
+  o.dead=true;
+  misses[current.id]=Math.min(2,(misses[current.id]||0)+1);
+  hurt("✕ "+o.pair.target.toUpperCase());
+}
+function hurt(msg){
+  if(invulnerable>0)return;
+  lives--;invulnerable=1.0;
+  badSound();flash(msg,false);updateHud();
+  if(lives<=0){running=false;E("gameOver").classList.add("show");}
+}
+
+function update(dt,now){
+  worldScroll+=speed*dt;
+  if(invulnerable>0)invulnerable-=dt;
+
+  if(!player.onGround){
+    var profile=playProfile();
+    if(jumpHeld && player.jumpHold<profile.maxHold && player.vy<0){
+      player.vy+=profile.holdForce*dt;
+      player.jumpHold+=dt;
+    }
+    player.vy+=profile.gravity*dt;
+    player.y+=player.vy*dt;
+    if(player.y>=GROUND-player.h){
+      player.y=GROUND-player.h;player.vy=0;player.onGround=true;player.jumpHold=0;
+    }
+  }
+
+  spawnIfNeeded(now);
+
+  for(var i=0;i<objects.length;i++) objects[i].x-=speed*dt;
+
+  var pb=playerBox();
+  for(var j=0;j<objects.length;j++){
+    var o=objects[j];
+    if(o.dead)continue;
+    if(overlaps(pb,objectBox(o))){
+      /* Correctness is evaluated against the CURRENT prompt at impact.
+         If target changed after this object spawned, it behaves according to
+         the new prompt, preserving continuous flow. */
+      if(o.pair.id===current.id) correctHit(o);
+      else wrongHit(o);
+    }
+  }
+  objects=objects.filter(function(o){return !o.dead&&o.x>-.18;});
+}
+
+function getAudio(){
+  if(!soundOn)return null;
+  try{
+    var AC=window.AudioContext||window.webkitAudioContext;
+    if(!AC)return null;
+    if(!audioCtx)audioCtx=new AC();
+    if(audioCtx.state==="suspended")audioCtx.resume();
+    return audioCtx;
+  }catch(e){return null;}
+}
+function beep(freq,dur,end){
+  var a=getAudio();if(!a)return;
+  try{
+    var o=a.createOscillator(),g=a.createGain(),n=a.currentTime;
+    o.type="square";o.frequency.setValueAtTime(freq,n);
+    if(end)o.frequency.exponentialRampToValueAtTime(end,n+dur);
+    g.gain.setValueAtTime(.035,n);g.gain.exponentialRampToValueAtTime(.0001,n+dur);
+    o.connect(g);g.connect(a.destination);o.start(n);o.stop(n+dur);
+  }catch(e){}
+}
+function goodSound(){beep(440,.06);setTimeout(function(){beep(660,.07);},60);setTimeout(function(){beep(880,.09);},125);}
+function badSound(){beep(170,.17,75);}
+function speak(text){
+ notifyCore("BT_JUMPER_SPEAK",{text:text,language:targetLang});
+}
+function flash(text,ok){
+  var t=E("toast");t.textContent=text;t.style.color=ok?"#63ff8b":"#ff5b6e";t.style.display="block";
+  clearTimeout(flash.timer);flash.timer=setTimeout(function(){t.style.display="none";},650);
+}
+
+function roundRect(x,y,w,h,r){
+  r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+}
+function resize(){
+  var r=wrap.getBoundingClientRect();W=Math.max(300,r.width);H=Math.max(320,r.height);DPR=Math.max(1,window.devicePixelRatio||1);
+  canvas.width=Math.floor(W*DPR);canvas.height=Math.floor(H*DPR);canvas.style.width=W+"px";canvas.style.height=H+"px";
+  ctx.setTransform(DPR,0,0,DPR,0,0);draw();
+}
+function pxRect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));}
+function pixelTree(x,ground,scale){
+  pxRect(x+12*scale,ground-54*scale,9*scale,54*scale,"#6b4729");
+  pxRect(x,ground-54*scale,35*scale,12*scale,"#1e6f3e");
+  pxRect(x+5*scale,ground-68*scale,26*scale,15*scale,"#2e9a50");
+  pxRect(x+10*scale,ground-80*scale,17*scale,15*scale,"#4fbd5c");
+}
+function pixelCloud(x,y,s){
+  pxRect(x,y+8*s,48*s,12*s,"#eaf8ff");pxRect(x+10*s,y,20*s,12*s,"#f8ffff");pxRect(x+29*s,y+4*s,14*s,12*s,"#f8ffff");
+}
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  pxRect(0,0,W,H,"#79c9ef");
+  /* clouds */
+  var cshift=(worldScroll*W*.10)%(W+180);
+  for(var c=0;c<5;c++) pixelCloud(((c*250-cshift+W+180)%(W+180))-80,45+(c%2)*55,1+(c%3)*.18);
+  /* distant hills */
+  ctx.fillStyle="#6aa56a";
+  ctx.beginPath();ctx.moveTo(0,H*.58);
+  for(var hx=0;hx<=W+80;hx+=80){var yy=H*(.50+((Math.floor(hx/80)%3)*.025));ctx.lineTo(hx,yy);}
+  ctx.lineTo(W,H*.72);ctx.lineTo(0,H*.72);ctx.closePath();ctx.fill();
+  /* far tree line */
+  var far=(worldScroll*W*.22)%95;
+  for(var ft=-1;ft<Math.ceil(W/95)+2;ft++){
+    var fx=ft*95-far;pxRect(fx,H*.62,55,H*.11,"#3c9651");pxRect(fx+10,H*.59,34,H*.06,"#55b85e");
+  }
+  /* ground */
+  pxRect(0,H*.72,W,H*.10,"#58b84e");
+  pxRect(0,H*.82,W,H*.18,"#8b5a31");
+  pxRect(0,H*.82,W,7,"#3d7c38");
+  /* scrolling dirt pixels / grass */
+  var gs=(worldScroll*W) % 64;
+  for(var g=-1;g<W/64+2;g++){
+    var gx=g*64-gs;
+    pxRect(gx+8,H*.835,18,5,"#6d4329");pxRect(gx+39,H*.875,12,5,"#a86d39");
+    pxRect(gx+19,H*.79,5,H*.03,"#25713d");pxRect(gx+25,H*.785,5,H*.035,"#25713d");
+  }
+  /* foreground scenery, kept below word lane */
+  var tshift=(worldScroll*W*.48)%310;
+  for(var t=-1;t<Math.ceil(W/310)+2;t++) pixelTree(t*310-tshift,H*.82,.85);
+
+  /* vocabulary blocks */
+  for(var i=0;i<objects.length;i++){
+    var o=objects[i],X=o.x*W,Y=o.y*H,w=o.w*W,h=o.h*H;
+    ctx.font="900 "+Math.max(12,Math.min(18,H*.031))+"px Courier New";ctx.textAlign="center";ctx.textBaseline="middle";
+    var tw=Math.min(Math.max(w,ctx.measureText(o.pair.target).width+28),W*.26);
+    /* pixel sign */
+    pxRect(X-tw/2-4,Y-h/2-4,tw+8,h+8,"#142746");
+    pxRect(X-tw/2,Y-h/2,tw,h,"#f3d64e");
+    pxRect(X-tw/2+5,Y-h/2+5,tw-10,5,"#fff1a8");
+    pxRect(X-tw/2+5,Y+h/2-8,tw-10,4,"#d28e2f");
+    ctx.fillStyle="#142746";ctx.fillText(o.pair.target,X,Y+1,tw-12);
+  }
+
+  /* more defined 16-bit runner */
+  var crouching=crouchHeld&&player.onGround;
+  var ph=(crouching?player.h*.47:player.h)*H,pw=player.w*W;
+  var top=(player.onGround?GROUND-(crouching?player.h*.47:player.h):player.y)*H;
+  var px=player.x*W,base=(player.onGround?GROUND:player.y+player.h)*H;
+  ctx.save();
+  if(invulnerable>0&&Math.floor(invulnerable*12)%2===0)ctx.globalAlpha=.35;
+
+  /* sprite is authored on a 24 x 32 logical pixel grid */
+  var unit=Math.max(2,Math.floor(Math.min(pw/24,ph/32)));
+  var sw=24*unit, sh=32*unit;
+  var sx=Math.round(px-sw*.48), sy=Math.round(base-sh);
+
+  function sp(x,y,w,h,c){pxRect(sx+x*unit,sy+y*unit,w*unit,h*unit,c);}
+  var outline="#151820", hair="#3a2118", skin="#e9a36f", skinHi="#ffc28d";
+  var shirt="#df3e4f", shirtHi="#f45a63", pants="#315b9a", pantsHi="#4c82c4";
+  var shoe="#20232c", white="#f4f0dc";
+
+  if(crouching){
+    /* crouch pose: low silhouette with bent legs */
+    sy=Math.round(base-17*unit);
+    sp(7,0,8,2,outline);sp(5,2,12,2,outline);sp(5,4,3,5,outline);sp(8,3,8,6,skin);
+    sp(14,4,2,2,skinHi);sp(15,5,2,2,outline);sp(7,8,10,2,outline);
+    sp(4,9,15,2,outline);sp(5,10,13,6,shirt);sp(6,10,5,2,shirtHi);
+    sp(2,11,4,3,outline);sp(1,12,3,3,skin);sp(17,11,4,3,outline);sp(20,12,3,3,skin);
+    sp(6,15,6,2,pants);sp(12,14,7,3,pantsHi);
+    sp(3,16,8,2,outline);sp(2,17,9,2,shoe);sp(14,16,8,2,outline);sp(14,17,9,2,shoe);
+  }else{
+    var runFrame=Math.floor(worldScroll*30)%2;
+    /* hair / head */
+    sp(6,0,10,2,outline);sp(4,2,14,3,outline);sp(4,5,3,6,outline);
+    sp(7,3,10,8,skin);sp(8,3,8,2,skinHi);sp(15,5,2,2,outline);
+    sp(16,7,3,2,skin);sp(8,10,9,2,outline);
+    /* neck */
+    sp(9,11,6,3,skin);sp(8,12,8,2,outline);
+    /* torso with outline and highlight */
+    sp(5,13,14,2,outline);sp(4,15,16,10,outline);
+    sp(6,15,12,9,shirt);sp(7,15,4,3,shirtHi);sp(11,16,2,8,white);
+    /* arms and fists */
+    sp(1,14,5,3,outline);sp(0,16,5,7,outline);sp(2,16,3,5,shirt);
+    sp(0,21,5,4,outline);sp(1,21,3,3,skin);
+    sp(18,14,5,3,outline);sp(20,16,4,7,outline);sp(20,16,2,5,shirt);
+    sp(20,21,4,4,outline);sp(20,21,3,3,skin);
+    /* belt / pants */
+    sp(5,24,14,3,outline);sp(7,24,10,2,pantsHi);
+    if(runFrame===0){
+      sp(6,26,5,4,pants);sp(13,26,5,3,pants);
+      sp(4,29,7,2,outline);sp(2,30,9,2,shoe);
+      sp(14,28,5,2,outline);sp(15,30,7,2,shoe);
+    }else{
+      sp(7,26,5,3,pants);sp(13,26,5,4,pants);
+      sp(5,28,5,2,outline);sp(2,30,8,2,shoe);
+      sp(14,29,6,2,outline);sp(14,30,9,2,shoe);
+    }
+  }
+  ctx.restore();
+
+  /* prompt bubble attached to runner */
+  if(current){
+    var label=current.prompt.toUpperCase();
+    ctx.font="900 "+Math.max(10,Math.min(15,H*.025))+"px Courier New";
+    var lw=Math.min(ctx.measureText(label).width+20,W*.30),lx=px+pw*.8,ly=top+ph*.32;
+    if(lx+lw>W-5)lx=px-lw-pw*.8;
+    pxRect(lx-3,ly-16,lw+6,32,"#142746");pxRect(lx,ly-13,lw,26,"#fff8d9");
+    ctx.fillStyle="#b52f49";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(label,lx+lw/2,ly,lw-8);
+  }
+}
+function loop(now){
+  if(!running||paused)return;
+  if(!lastTime)lastTime=now;
+  var dt=Math.min(.035,(now-lastTime)/1000);lastTime=now;
+  update(dt,now);draw();
+  if(running)raf=requestAnimationFrame(loop);
+}
+
+E("restart").addEventListener("click",restart);
+E("again").addEventListener("click",restart);
+E("pause").addEventListener("click",togglePause);
+E("mainMenu").addEventListener("click",showMenu);
+E("overMenu").addEventListener("click",showMenu);
+E("sound").addEventListener("click",function(){
+ soundOn=!soundOn;this.textContent=soundOn?"🔊 SOUND ON":"🔇 SOUND OFF";
+});
+window.addEventListener("resize",resize);
+
+window.addEventListener("keydown",function(e){
+  if(!game.classList.contains("active"))return;
+  var k=e.key.toLowerCase();
+  if(e.code==="Space"||k==="arrowup"||k==="w"){
+    e.preventDefault();
+    if(!jumpHeld){jumpHeld=true;beginJump();}
+  }else if(k==="arrowdown"||k==="s"){
+    e.preventDefault();crouchHeld=true;
+  }else if(k==="p"){
+    e.preventDefault();if(!e.repeat)togglePause();
+  }
+});
+window.addEventListener("keyup",function(e){
+  var k=e.key.toLowerCase();
+  if(e.code==="Space"||k==="arrowup"||k==="w") releaseJump();
+  if(k==="arrowdown"||k==="s") crouchHeld=false;
+});
+
+function bindTouchHold(id,onPress,onRelease){
+  var b=E(id);
+  function down(e){e.preventDefault();onPress();if(b.setPointerCapture)try{b.setPointerCapture(e.pointerId);}catch(x){}}
+  function up(e){if(e)e.preventDefault();onRelease();}
+  b.addEventListener("pointerdown",down,{passive:false});
+  b.addEventListener("pointerup",up,{passive:false});
+  b.addEventListener("pointercancel",up,{passive:false});
+  b.addEventListener("lostpointercapture",up,{passive:false});
+}
+bindTouchHold("touchJump",function(){if(!jumpHeld){jumpHeld=true;beginJump();}},releaseJump);
+bindTouchHold("touchCrouch",function(){if(running&&!paused)crouchHeld=true;},function(){crouchHeld=false;});
+function clearHeldControls(){jumpHeld=false;crouchHeld=false;}
+window.addEventListener("blur",clearHeldControls);
+document.addEventListener("visibilitychange",function(){if(document.hidden)clearHeldControls();});
+
+window.addEventListener("message",function(e){
+ if(e.origin!==location.origin||e.source!==window.parent||!e.data||typeof e.data!=="object")return;
+ if(e.data.type==="BT_JUMPER_PING"){notifyCore("BT_JUMPER_READY");return;}
+ if(e.data.type==="BT_JUMPER_START"){
+  coreMode=true;
+  startGame(e.data.pairs,e.data.language);
+ }
+});
+notifyCore("BT_JUMPER_READY");
+
+})();
+</script>
+</body>
+</html>
