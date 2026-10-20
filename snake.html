@@ -8,7 +8,7 @@ body{margin:0;background:#10192e;color:#f8f8ff;font-family:"Courier New",monospa
 #snakeFrame.playing{display:block}
 #app{max-width:1100px;margin:8px auto}
 </style></head>
-<body><main id="app"></main><iframe id="snakeFrame" title="Word Snake gameplay" src="./snake-game.html?core-build=acbc9cc195d3"></iframe>
+<body><main id="app"></main><iframe id="snakeFrame" title="Word Snake gameplay" src="./snake-game.html?core-build=04c0c892e6ef"></iframe>
 <script type="module">
 import { mountTeacherMenu,mountStudentMenu } from "./core/menu.js";
 import { createSharingClient,readStudentSetId } from "./core/sharing.js";
@@ -29,6 +29,7 @@ function start(vocabulary){
  pendingVocabulary=vocabulary;
  menu?.destroy();menu=null;root.hidden=true;frame.classList.add("playing");
  deliverSnake();
+ frame.contentWindow?.postMessage({type:"BT_SNAKE_PING"},location.origin);
  frame.focus();
 }
 function showMenu(forceTeacher=false){
@@ -42,5 +43,7 @@ window.addEventListener("message",e=>{
  if(e.data?.type==="BT_SNAKE_MENU"){history.replaceState(null,"",location.pathname+location.search);showMenu(true);}
  if(e.data?.type==="BT_SNAKE_START_FAILED"){frame.classList.remove("playing");root.hidden=false;root.textContent="Word Snake could not start. Please refresh and try again.";}
 });
+frame.addEventListener("load",()=>{snakeReady=false;frame.contentWindow?.postMessage({type:"BT_SNAKE_PING"},location.origin);});
 showMenu();
+frame.contentWindow?.postMessage({type:"BT_SNAKE_PING"},location.origin);
 </script></body></html>
