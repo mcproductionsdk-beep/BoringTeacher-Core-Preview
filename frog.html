@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Word Frog — Boring Teacher</title>
+<link rel="stylesheet" href="./styles/menu.css">
+<style>
+body{margin:0;background:#10192e;color:#f8f8ff;font-family:"Courier New",monospace}
+#frogFrame{display:none;width:100%;height:calc(100dvh - 12px);min-height:600px;border:0;background:#16264e}
+#frogFrame.playing{display:block}
+#app{max-width:1100px;margin:8px auto}
+</style></head>
+<body><main id="app"></main><iframe id="frogFrame" title="Word Frog gameplay" src="./frog-game.html?release=frog-core-preview-1"></iframe>
+<script type="module">
+import { mountTeacherMenu,mountStudentMenu } from "./core/menu.js?release=core-20261020";
+import { createSharingClient,readStudentSetId } from "./core/sharing.js";
+import { createVoiceService } from "./core/voice.js";
+import { WAREHOUSE_CATEGORIES } from "./core/warehouse-categories.js";
+const root=document.getElementById("app"),frame=document.getElementById("frogFrame");
+const sharing=createSharingClient({apiBaseUrl:"https://boringteacher-vocabulary-api.mcproductionsdk.workers.dev"});
+const voice=createVoiceService();let menu=null;
+const instructions="UP / W = jump forward · DOWN / S = jump back · SPACE = boost · P = pause. Land on the moving stone with the correct translation; cross the river and return.";
+const options={title:"WORD FROG",instructions,categories:WAREHOUSE_CATEGORIES,defaultCategory:"Animals",defaultText:"",previewGameUrl:location.href,onPlay:start};
+let frogReady=false,pendingVocabulary=null;
+function deliverFrog(){
+ if(!frogReady||!pendingVocabulary)return;
+ frame.contentWindow.postMessage({type:"BT_FROG_START",pairs:pendingVocabulary.pairs,language:pendingVocabulary.language},location.origin);
+ pendingVocabulary=null;
+}
+function start(vocabulary){
+ pendingVocabulary=vocabulary;
+ menu?.destroy();menu=null;root.hidden=true;frame.classList.add("playing");
+ deliverFrog();
+ frame.contentWindow?.postMessage({type:"BT_FROG_PING"},location.origin);
+ frame.focus();
+}
+function showMenu(forceTeacher=false){
+ frame.classList.remove("playing");root.hidden=false;
+ menu?.destroy();menu=null;voice.cancel();
+ menu=!forceTeacher&&readStudentSetId(location.href)?mountStudentMenu(root,{sharing,voice},{...options,studentUrl:location.href,onRecover:()=>{history.replaceState(null,"",location.pathname+location.search);showMenu(true);}}):mountTeacherMenu(root,{sharing,voice},options);
+}
+window.addEventListener("message",e=>{
+ if(e.origin!==location.origin||e.source!==frame.contentWindow)return;
+ if(e.data?.type==="BT_FROG_READY"){frogReady=true;deliverFrog();}
+ if(e.data?.type==="BT_FROG_SPEAK"&&typeof e.data.text==="string"&&e.data.text.length<=250&&["es-ES","de-DE","da-DK","en-US"].includes(e.data.language)){void voice.speak(e.data.text,e.data.language);}
+ if(e.data?.type==="BT_FROG_CANCEL_SPEECH")voice.cancel();
+ if(e.data?.type==="BT_FROG_MENU"){history.replaceState(null,"",location.pathname+location.search);showMenu(true);}
+ if(e.data?.type==="BT_FROG_START_FAILED"){frame.classList.remove("playing");root.hidden=false;root.textContent="Word Frog could not start. Please refresh and try again.";}
+});
+frame.addEventListener("load",()=>{frogReady=false;frame.contentWindow?.postMessage({type:"BT_FROG_PING"},location.origin);});
+showMenu();
+frame.contentWindow?.postMessage({type:"BT_FROG_PING"},location.origin);
+</script></body></html>
