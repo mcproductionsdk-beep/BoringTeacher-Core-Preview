@@ -263,7 +263,9 @@ window.BTSnake={start:function(payload){
 })();</script><script>
 parent.postMessage({type:"BT_SNAKE_READY"},location.origin);
 window.addEventListener("message",function(event){
- if(event.origin!==location.origin||event.source!==parent||event.data?.type!=="BT_SNAKE_START")return;
+ if(event.origin!==location.origin||event.source!==parent)return;
+ if(event.data?.type==="BT_SNAKE_PING"){parent.postMessage({type:"BT_SNAKE_READY"},location.origin);return;}
+ if(event.data?.type!=="BT_SNAKE_START")return;
  var started=window.BTSnake?.start(event.data.vocabulary);
  parent.postMessage({type:started?"BT_SNAKE_STARTED":"BT_SNAKE_START_FAILED"},location.origin);
 });
