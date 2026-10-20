@@ -2,8 +2,8 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Word Eater — Boring Teacher Core Preview</title>
 <link rel="stylesheet" href="./styles/menu.css">
-<style>body{margin:0;background:#10192e;color:#f8f8ff;font-family:"Courier New",monospace}#eaterFrame{display:none;width:100%;height:calc(100dvh - 12px);min-height:600px;border:0;background:#16264e}#eaterFrame.playing{display:block}#app{max-width:1100px;margin:8px auto}#app[hidden]{display:none!important}body:has(#eaterFrame.playing) #app{display:none!important}</style></head>
-<body><main id="app"></main><iframe id="eaterFrame" title="Word Eater gameplay" src="./eater-game.html?release=eater-landscape-preview-4"></iframe>
+<style>html,body{overflow:hidden}body{margin:0;background:#10192e;color:#f8f8ff;font-family:"Courier New",monospace}#eaterFrame{display:none;width:100%;height:calc(100dvh - 12px);min-height:600px;border:0;background:#16264e}#eaterFrame.playing{display:block}#app{max-width:1100px;margin:8px auto}#app[hidden]{display:none!important}body:has(#eaterFrame.playing) #app{display:none!important}</style></head>
+<body><main id="app"></main><iframe id="eaterFrame" title="Word Eater gameplay" src="./eater-game.html?release=eater-feedback-preview-5"></iframe>
 <script type="module">
 import {mountTeacherMenu,mountStudentMenu} from './core/menu.js?release=core-20261020';
 import {createSharingClient,readStudentSetId} from './core/sharing.js';
@@ -23,6 +23,7 @@ if(d.type==='BT_EATER_CANCEL_SPEECH'){voice.cancel();}
 if(d.type==='BT_EATER_MENU'){history.replaceState(null,'',location.pathname+location.search);showMenu(true);}
 if(d.type==='BT_EATER_START_FAILED'){frame.classList.remove('playing');root.hidden=false;root.style.removeProperty('display');root.textContent='Word Eater could not start. Please check the vocabulary set.';}
 });
+window.addEventListener('keydown',e=>{if(frame.classList.contains('playing')&&['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();},{passive:false});
 frame.addEventListener('load',()=>{ready=false;frame.contentWindow?.postMessage({type:'BT_EATER_PING'},location.origin);});
 showMenu();frame.contentWindow?.postMessage({type:'BT_EATER_PING'},location.origin);
 </script></body></html>
