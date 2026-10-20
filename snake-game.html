@@ -66,11 +66,7 @@ button{min-height:48px}
 
 body.studentMode #teacherGrid{display:none!important}
 </style></head><body><main class="app"><div class="logo">WORD SNAKE</div>
-<section id="menu" hidden aria-hidden="true" style="display:none!important">
-<input id="words" type="hidden"><select id="language"><option value="es-ES">Spanish</option><option value="de-DE">German</option><option value="da-DK">Danish</option><option value="en-US">English</option></select><select id="category"><option value="custom">Custom</option></select>
-<div id="preview"></div><div id="error"></div><div id="voiceCheck"></div>
-<button id="play" type="button"></button><button id="swap" type="button"></button><button id="testVoice" type="button"></button><button id="shareStudentLink" type="button"></button><div id="shareStatus"></div><button id="studentPlay" type="button"></button><div id="studentSetTitle"></div><div id="studentSetMeta"></div>
-</section>
+<select id="language" hidden aria-hidden="true"><option value="es-ES">Spanish</option><option value="de-DE">German</option><option value="da-DK">Danish</option><option value="en-US">English</option></select><div id="voiceCheck" hidden></div>
 <section id="game" class="screen"><div class="hud"><div>SCORE <span id="score">0</span> · <span id="lives">❤❤❤</span></div><div id="target" class="target"></div><div id="progress" class="progress"></div></div><div id="wrap" class="wrap"><canvas id="canvas"></canvas><div id="toast" class="toast"></div><div id="pauseOverlay" class="overlay"><div class="big" style="color:#f2d64b">PAUSED</div></div><div id="gameOver" class="overlay"><div><div class="big">GAME OVER</div><div class="msg">Nice try, your grandma would be proud</div><button id="again" class="primary">PLAY AGAIN</button><button id="overMenu" class="pink">MAIN MENU</button></div></div></div><div class="buttons"><button id="pause" class="yellow">PAUSE</button><button id="restart">RESTART</button><button id="mainMenu" class="pink">MAIN MENU</button><button id="fullscreen" class="yellow">⛶ EXPAND GAME</button><button id="sound">🔊 SOUND ON</button></div><div class="mobile-controls" aria-label="Snake touch steering">
 <button type="button" class="up" id="touchUp" aria-label="Steer up">▲</button>
 <button type="button" class="left" id="touchLeft" aria-label="Steer left">◀</button>
@@ -78,7 +74,7 @@ body.studentMode #teacherGrid{display:none!important}
 <button type="button" class="right" id="touchRight" aria-label="Steer right">▶</button>
 </div><div class="tip">STEER: ARROWS / WASD · P: PAUSE · EDGES WRAP</div></section></main>
 <script>
-(function(){"use strict";function E(x){return document.getElementById(x)}var ta=E("words"),canvas=E("canvas"),ctx=canvas.getContext("2d"),wrap=E("wrap"),menu=E("menu"),game=E("game");
+(function(){"use strict";function E(x){return document.getElementById(x)}var canvas=E("canvas"),ctx=canvas.getContext("2d"),wrap=E("wrap"),game=E("game");
 function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
 function build(){queue=shuffle(vocab);queue=queue.concat(shuffle(vocab.filter(function(v){return(misses[v.id]||0)>0})));done=0}
 function next(){if(!queue.length){round++;step=Math.max(.085,step*.91);build();flash("ROUND "+round+" · SNAKE SPEED UP!",1)}current=queue.shift();hud();ensureCorrectFood()}
@@ -121,7 +117,7 @@ function ensureCorrectFood(){
  /* Free room for the required correct answer before any distractor. */
  while(!addFood(current)&&foods.length)foods.pop();
 }
-function start(pairs,locale){if(!Array.isArray(pairs)||pairs.length<5)return false;lang=locale;vocab=pairs.map(function(p,i){return{id:i,target:p[0],prompt:p[1]}});score=0;lives=3;round=1;done=0;misses={};step=.18;snake=[{x:15,y:10},{x:14,y:10},{x:13,y:10},{x:12,y:10}];dir={x:1,y:0};nextDir={x:1,y:0};foods=[];invincible=0;running=true;paused=false;last=0;acc=0;build();current=queue.shift();hud();menu.classList.remove("active");game.classList.add("active");E("gameOver").classList.remove("show");resize();fillFoods();cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);return true;}
+function start(pairs,locale){if(!Array.isArray(pairs)||pairs.length<5)return false;lang=locale;vocab=pairs.map(function(p,i){return{id:i,target:p[0],prompt:p[1]}});score=0;lives=3;round=1;done=0;misses={};step=.18;snake=[{x:15,y:10},{x:14,y:10},{x:13,y:10},{x:12,y:10}];dir={x:1,y:0};nextDir={x:1,y:0};foods=[];invincible=0;running=true;paused=false;last=0;acc=0;build();current=queue.shift();hud();game.classList.add("active");E("gameOver").classList.remove("show");resize();fillFoods();cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);return true;}
 function resetPosition(){snake=[{x:15,y:10},{x:14,y:10},{x:13,y:10},{x:12,y:10}];dir={x:1,y:0};nextDir={x:1,y:0};invincible=1}
 function hurt(t){if(invincible>0)return;lives--;invincible=1;bad();flash(t,0);hud();if(lives<=0){running=false;E("gameOver").classList.add("show")}else resetPosition()}
 function move(){
