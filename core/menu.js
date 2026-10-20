@@ -58,7 +58,10 @@ export function mountStudentMenu(root,services,options={}){
   let set=null;
   play.addEventListener("click",()=>{if(set)options.onPlay?.(set);},{signal});
   const id=readStudentSetId(options.studentUrl??location.href);
-  if(!id){heading.textContent="INVALID LINK";meta.textContent="This student link has no valid set ID.";}
-  else services.sharing.loadSet(id).then(value=>{if(signal.aborted)return;set=value;heading.textContent=value.title;meta.textContent=value.language+" · "+value.pairs.length+" words";play.disabled=false;}).catch(e=>{if(signal.aborted)return;heading.textContent="UNABLE TO LOAD";meta.textContent=e.message??"Could not load vocabulary.";});
+  const recover=button("RETURN TO TEACHER MENU","menuButton");
+  recover.addEventListener("click",()=>options.onRecover?.(),{signal});
+  function showRecovery(){if(!recover.isConnected)card.append(recover);}
+  if(!id){heading.textContent="INVALID LINK";meta.textContent="This student link has no valid set ID.";showRecovery();}
+  else services.sharing.loadSet(id).then(value=>{if(signal.aborted)return;set=value;heading.textContent=value.title;meta.textContent=value.language+" · "+value.pairs.length+" words";play.disabled=false;}).catch(e=>{if(signal.aborted)return;heading.textContent="UNABLE TO LOAD";meta.textContent=e.message??"Could not load vocabulary.";showRecovery();});
   return{destroy(){abort.abort();clean();}};
 }
